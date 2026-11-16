@@ -1,0 +1,1031 @@
+/* ============================================================================
+ *  css/mobile.css — GIAO DIỆN ĐIỆN THOẠI CHUYÊN BIỆT (bản 2.8)
+ *  ---------------------------------------------------------------------------
+ *  File này được nạp CUỐI CÙNG trong index.html, SAU css/responsive.css.
+ *
+ *  PHÂN BIỆT VỚI responsive.css:
+ *    · responsive.css : thu nhỏ/giãn bố cục PC cho màn hình nhỏ (vẫn là PC).
+ *    · mobile.css     : bố cục RIÊNG cho điện thoại — danh sách câu hỏi dọc,
+ *                       bottom sheet, màn hình cấu hình toàn màn hình, màn hình
+ *                       lập trình khối riêng, player toàn màn hình.
+ *
+ *  NGUYÊN TẮC:
+ *    1. Dùng `env(safe-area-inset-*)` để không bị tai thỏ / thanh điều hướng che.
+ *    2. Mọi nút bấm ≥ 44px (khuyến nghị WCAG).
+ *    3. Màu nhận diện của 6 loại câu hỏi GIỮ NGUYÊN như PC (biến --type-color).
+ *    4. Ô nhập dùng cỡ chữ 16px ⇒ iOS không tự phóng to khi bấm.
+ * ========================================================================== */
+
+
+/* ==========================================================================
+ *  1. BIẾN DÙNG CHUNG
+ * --------------------------------------------------------------------------
+ *  --mobile-safe-b : khoảng trống an toàn ở đáy (iPhone có Home Indicator)
+ *  --mobile-safe-t : khoảng trống an toàn ở trên (tai thỏ)
+ *  --mobile-top-h  : chiều cao thanh công cụ mobile
+ * ========================================================================== */
+:root {
+    --mobile-safe-t: env(safe-area-inset-top, 0px);
+    --mobile-safe-b: env(safe-area-inset-bottom, 0px);
+    --mobile-safe-l: env(safe-area-inset-left, 0px);
+    --mobile-safe-r: env(safe-area-inset-right, 0px);
+    --mobile-top-h: 52px;
+    --mobile-tabs-h: 46px;
+    --mobile-fab-size: 58px;
+    --mobile-radius: 14px;
+}
+
+
+/* ==========================================================================
+ *  2. KHUNG GIAO DIỆN MOBILE (ẩn hoàn toàn trên desktop)
+ * ========================================================================== */
+.mobile-root {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    background: #f2f6fc;
+    color: #2b3445;
+    overflow: hidden;
+    /* Tôn trọng vùng an toàn của thiết bị */
+    padding-top: var(--mobile-safe-t);
+    padding-left: var(--mobile-safe-l);
+    padding-right: var(--mobile-safe-r);
+}
+
+.mobile-root[hidden] { display: none; }
+
+/* Khi màn hình mobile mở, khoá cuộn trang nền */
+body.mobile-editor-open,
+body.mobile-coding-open,
+body.mobile-sheet-open {
+    overflow: hidden;
+}
+
+
+/* ==========================================================================
+ *  3. THANH CÔNG CỤ TRÊN CÙNG (tối giản)
+ * ========================================================================== */
+.mobile-topbar {
+    flex: 0 0 auto;
+    height: var(--mobile-top-h);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    background: #855CD6;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(30, 20, 60, .22);
+}
+
+.mobile-icon-btn {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .20);
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .15s ease, transform .12s ease;
+}
+
+.mobile-icon-btn:active { transform: scale(.9); background: rgba(255, 255, 255, .36); }
+
+.mobile-project-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, .35);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    outline: none;
+}
+
+.mobile-project-title:focus { background: #fff; color: #333; }
+
+/* Trạng thái lưu: Đang lưu / Đã lưu / Lỗi lưu */
+.mobile-save-state {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 7px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .18);
+    white-space: nowrap;
+}
+
+.mobile-save-state[data-state="saving"] { background: rgba(255, 214, 10, .28); }
+.mobile-save-state[data-state="saved"]  { background: rgba(34, 197, 94, .32); }
+.mobile-save-state[data-state="error"]  { background: rgba(239, 68, 68, .38); }
+
+/* Menu tuỳ chọn dự án */
+.mobile-menu {
+    position: absolute;
+    top: calc(var(--mobile-top-h) - 2px);
+    right: 8px;
+    min-width: 200px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(20, 30, 60, .3);
+    padding: 6px;
+    z-index: 60;
+    animation: sbPopIn .18s cubic-bezier(.2, .9, .3, 1.3) both;
+}
+
+.mobile-menu[hidden] { display: none; }
+
+.mobile-menu-item {
+    display: block;
+    width: 100%;
+    padding: 12px 12px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #3a4557;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mobile-menu-item:active { background: #eef4ff; }
+
+
+/* ==========================================================================
+ *  4. THANH CHUYỂN CHẾ ĐỘ (Thiết kế / Xem trước)
+ * ========================================================================== */
+.mobile-mode-tabs {
+    flex: 0 0 auto;
+    height: var(--mobile-tabs-h);
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mobile-mode-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 800;
+    color: #7b8798;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+}
+
+.mobile-mode-tab.is-active {
+    color: #4c97ff;
+    border-bottom-color: #4c97ff;
+    background: #f4f9ff;
+}
+
+.mobile-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+}
+
+.mobile-pane {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-pane[hidden] { display: none; }
+
+
+/* ==========================================================================
+ *  5. DANH SÁCH CÂU HỎI DỌC (chế độ Thiết kế)
+ * ========================================================================== */
+.mobile-list-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.mobile-list-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 12px 14px 8px;
+}
+
+.mobile-list-title {
+    font-size: 17px;
+    font-weight: 900;
+    color: #2b3445;
+    margin: 0;
+}
+
+.mobile-list-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b95a3;
+}
+
+/* Trạng thái rỗng */
+.mobile-list-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: #8b95a3;
+}
+
+.mobile-list-empty[hidden] { display: none; }
+.mobile-empty-icon { font-size: 44px; margin-bottom: 8px; }
+.mobile-empty-hint { font-size: 12.5px; opacity: .8; }
+
+/* Danh sách các thẻ câu hỏi */
+.mobile-question-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 12px 96px;      /* chừa chỗ cho nút FAB ở đáy */
+}
+
+.mobile-q-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: #fff;
+    border-radius: var(--mobile-radius);
+    border: 1px solid #e4e9f0;
+    /* Vạch màu nhận diện của loại câu hỏi (giữ như PC) */
+    border-left: 5px solid var(--type-color, #4c97ff);
+    box-shadow: 0 2px 8px rgba(30, 60, 120, .06);
+    transition: box-shadow .16s ease, transform .16s ease;
+}
+
+.mobile-q-card.is-selected {
+    box-shadow: 0 0 0 2px var(--type-color, #4c97ff), 0 4px 14px rgba(30, 60, 120, .14);
+}
+
+/* Số thứ tự câu hỏi */
+.mobile-q-index {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--type-color, #4c97ff);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.mobile-q-main { flex: 1 1 auto; min-width: 0; }
+
+.mobile-q-type {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--type-color, #4c97ff);
+    margin-bottom: 3px;
+}
+
+.mobile-q-text {
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2b3445;
+    line-height: 1.4;
+    /* Giới hạn 3 dòng để thẻ không quá cao */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mobile-q-summary {
+    font-size: 11.5px;
+    color: #6b7a90;
+    margin-bottom: 6px;
+}
+
+.mobile-q-summary[hidden] { display: none; }
+
+.mobile-q-meta { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.mobile-chip {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 9px;
+    background: #f1f5fb;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #6b7a90;
+}
+
+.mobile-chip-soft { background: #fff3e0; color: #b45309; }
+.mobile-chip-soft[hidden] { display: none; }
+
+/* Nút thao tác trên thẻ */
+.mobile-q-actions {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mobile-q-edit,
+.mobile-q-more {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 10px;
+    background: #f1f5fb;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background .15s ease, transform .12s ease;
+}
+
+.mobile-q-edit:active,
+.mobile-q-more:active { transform: scale(.9); background: #e2e8f0; }
+
+
+/* ==========================================================================
+ *  6. NÚT THÊM CÂU HỎI (FAB) — đặt ở đáy màn hình, dễ chạm bằng một tay
+ * ========================================================================== */
+.mobile-fab {
+    position: absolute;
+    right: 16px;
+    bottom: calc(16px + var(--mobile-safe-b));
+    width: var(--mobile-fab-size);
+    height: var(--mobile-fab-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: #4c97ff;
+    color: #fff;
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 300;
+    box-shadow: 0 8px 22px rgba(76, 151, 255, .45);
+    cursor: pointer;
+    z-index: 20;
+    transition: transform .14s ease, background .15s ease;
+}
+
+.mobile-fab:active { transform: scale(.92); background: #3d87e8; }
+
+
+/* ==========================================================================
+ *  7. BOTTOM SHEET (bảng trượt lên từ dưới)
+ * ========================================================================== */
+.mobile-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 700;
+    display: flex;
+    align-items: flex-end;
+    background: rgba(20, 30, 60, .5);
+    opacity: 0;
+    transition: opacity .22s ease;
+}
+
+.mobile-sheet-overlay[hidden] { display: none; }
+.mobile-sheet-overlay.is-open { opacity: 1; }
+
+.mobile-sheet {
+    width: 100%;
+    max-height: 86vh;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding-bottom: var(--mobile-safe-b);
+    transform: translateY(100%);
+    transition: transform .26s cubic-bezier(.2, .9, .3, 1);
+}
+
+.mobile-sheet-overlay.is-open .mobile-sheet { transform: translateY(0); }
+
+/* Thanh kéo ở mép trên của sheet */
+.mobile-sheet-handle {
+    width: 40px;
+    height: 4px;
+    margin: 8px auto 4px;
+    border-radius: 2px;
+    background: #d8dee8;
+}
+
+.mobile-sheet-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 14px 10px;
+    border-bottom: 1px solid #eef1f5;
+}
+
+.mobile-sheet-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 900;
+    color: #2b3445;
+}
+
+.mobile-sheet-close {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: #f1f5fb;
+    color: #6b7a90;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.mobile-sheet-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 14px 18px;
+}
+
+/* --- Lưới chọn loại câu hỏi (trong sheet thêm câu hỏi) --- */
+.mobile-type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.mobile-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-height: 84px;
+    padding: 12px;
+    border: 2px solid var(--type-color, #4c97ff);
+    border-radius: var(--mobile-radius);
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    transition: transform .12s ease, background .15s ease;
+}
+
+.mobile-type-btn:active {
+    transform: scale(.96);
+    background: color-mix(in srgb, var(--type-color, #4c97ff) 10%, white);
+}
+
+.mobile-type-icon { font-size: 26px; line-height: 1; }
+
+.mobile-type-label {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--type-color, #4c97ff);
+    line-height: 1.3;
+}
+
+/* --- Nhóm chọn vị trí chèn --- */
+.mobile-sheet-group { margin-bottom: 14px; }
+
+.mobile-sheet-group-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: #8b95a3;
+    margin-bottom: 7px;
+}
+
+.mobile-pos-group { display: flex; gap: 8px; }
+
+.mobile-pos-btn {
+    flex: 1;
+    min-height: 44px;
+    border: 2px solid #dfe6ef;
+    border-radius: 10px;
+    background: #f7f9fc;
+    font-size: 13px;
+    font-weight: 800;
+    color: #46526a;
+    cursor: pointer;
+}
+
+.mobile-pos-btn.is-active {
+    border-color: #4c97ff;
+    background: #eaf3ff;
+    color: #2f6fd0;
+}
+
+/* --- Danh sách thao tác của một câu hỏi --- */
+.mobile-menu-list { display: flex; flex-direction: column; gap: 6px; }
+
+.mobile-menu-info {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b95a3;
+    padding: 4px 2px 8px;
+    border-bottom: 1px dashed #e3e8f0;
+    margin-bottom: 6px;
+}
+
+.mobile-action-btn {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #f7f9fc;
+    font-size: 14px;
+    font-weight: 700;
+    color: #3a4557;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mobile-action-btn:active { background: #e9eef5; }
+.mobile-action-danger { color: #d63c3c; background: #fff2f2; }
+
+/* --- Danh sách câu hỏi trong sheet --- */
+.mobile-list-sheet { display: flex; flex-direction: column; gap: 6px; }
+
+.mobile-list-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    padding: 10px 12px;
+    border: none;
+    border-left: 4px solid var(--type-color, #4c97ff);
+    border-radius: 10px;
+    background: #f7f9fc;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mobile-list-item:active { background: #e9eef5; }
+
+.mobile-list-item-index {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--type-color, #4c97ff);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.mobile-list-item-text { flex: 1 1 auto; min-width: 0; }
+
+.mobile-list-item-type {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--type-color, #4c97ff);
+}
+
+.mobile-list-item-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #2b3445;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ==========================================================================
+ *  8. MÀN HÌNH CẤU HÌNH TOÀN MÀN HÌNH
+ * ========================================================================== */
+.mobile-editor {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    display: flex;
+    flex-direction: column;
+    background: #f2f6fc;
+    padding-top: var(--mobile-safe-t);
+    padding-left: var(--mobile-safe-l);
+    padding-right: var(--mobile-safe-r);
+}
+
+.mobile-editor[hidden] { display: none; }
+
+.mobile-editor-header {
+    flex: 0 0 auto;
+    height: var(--mobile-top-h);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    background: linear-gradient(135deg, #855CD6, #4c97ff);
+    color: #fff;
+}
+
+.mobile-editor-header .mobile-icon-btn { background: rgba(255, 255, 255, .22); }
+
+.mobile-editor-title {
+    flex: 1;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 900;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-editor-tabs {
+    flex: 0 0 auto;
+    height: var(--mobile-tabs-h);
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mobile-editor-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    background: none;
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #7b8798;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+}
+
+.mobile-editor-tab.is-active {
+    color: #4c97ff;
+    border-bottom-color: #4c97ff;
+    background: #f4f9ff;
+}
+
+.mobile-editor-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+}
+
+.mobile-editor-pane {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px 12px 20px;
+}
+
+.mobile-editor-pane[hidden] { display: none; }
+
+/* Chân modal dính đáy ⇒ nút Lưu / Hủy luôn trong tầm tay, không bị bàn phím che */
+.mobile-editor-footer {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px calc(10px + var(--mobile-safe-b));
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 14px rgba(15, 32, 64, .08);
+}
+
+.mobile-editor-footer .btn {
+    flex: 1;
+    min-height: 46px;
+    font-size: 14.5px;
+}
+
+/* --- Nhóm thu gọn (accordion) --- */
+.mobile-form-group {
+    margin-bottom: 10px;
+    background: #fff;
+    border-radius: var(--mobile-radius);
+    border: 1px solid #e4e9f0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(30, 60, 120, .05);
+}
+
+.mobile-group-head {
+    width: 100%;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border: none;
+    background: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    color: #2b3445;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mobile-group-caret {
+    flex: 0 0 auto;
+    font-size: 13px;
+    color: #8b95a3;
+    transition: transform .2s ease;
+}
+
+.mobile-form-group.is-open .mobile-group-caret { transform: rotate(180deg); }
+
+.mobile-group-body {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid #eef1f5;
+}
+
+.mobile-form-group.is-open .mobile-group-body { display: block; }
+
+/* Ô nhập cỡ 16px ⇒ iOS không tự phóng to khi bấm */
+.mobile-editor .form-input,
+.mobile-editor .form-textarea,
+.mobile-editor .form-select {
+    font-size: 16px;
+    min-height: 44px;
+}
+
+.mobile-editor .form-textarea { min-height: 84px; }
+.mobile-editor .btn { min-height: 44px; }
+.mobile-editor .icon-btn { min-width: 44px; min-height: 44px; }
+.mobile-editor .row-item { flex-wrap: wrap; }
+.mobile-editor .row-item input[type="text"] { flex: 1 1 100%; }
+.mobile-editor .form-row { flex-direction: column; gap: 10px; }
+.mobile-editor .form-row > .form-group { min-width: 0; width: 100%; }
+
+
+/* ==========================================================================
+ *  9. MÀN HÌNH LẬP TRÌNH KHỐI
+ * ========================================================================== */
+.mobile-coding {
+    position: fixed;
+    inset: 0;
+    z-index: 610;
+    display: flex;
+    flex-direction: column;
+    background: #f6f8fb;
+    padding-top: var(--mobile-safe-t);
+    padding-left: var(--mobile-safe-l);
+    padding-right: var(--mobile-safe-r);
+}
+
+.mobile-coding[hidden] { display: none; }
+
+.mobile-coding-header {
+    flex: 0 0 auto;
+    height: var(--mobile-top-h);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+    background: linear-gradient(135deg, #855CD6, #4c97ff);
+    color: #fff;
+}
+
+.mobile-coding-header .mobile-icon-btn { background: rgba(255, 255, 255, .22); }
+
+.mobile-coding-title {
+    flex: 1;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 900;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Thanh công cụ: thư viện khối + zoom + căn giữa */
+.mobile-coding-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: #fff;
+    border-bottom: 1px solid #e5eaf0;
+}
+
+.mobile-coding-tool {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid #dfe6ef;
+    border-radius: 10px;
+    background: #f7f9fc;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #46526a;
+    cursor: pointer;
+}
+
+.mobile-coding-tool:active { background: #e9eef5; }
+
+.mobile-coding-zoom {
+    min-width: 48px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #6b7a90;
+}
+
+.mobile-coding-workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 10px;
+    /* Vuốt trên vùng này do JS điều khiển (pinch-zoom) */
+    touch-action: none;
+}
+
+.mobile-coding-output {
+    flex: 0 0 auto;
+    max-height: 34vh;
+    overflow-y: auto;
+    background: #fff;
+    border-top: 2px solid #dbe8fb;
+    padding: 10px 12px calc(10px + var(--mobile-safe-b));
+    font-size: 12.5px;
+}
+
+.mobile-coding-output[hidden] { display: none; }
+
+/* Vùng chọn khối đang chờ đặt (chế độ chạm-đặt) */
+.mobile-coding .cb-gap.is-touch-target {
+    height: 36px;
+    background: rgba(76, 151, 255, .16);
+    box-shadow: inset 0 0 0 2px #4c97ff;
+}
+
+.mobile-coding .cb-slot.is-touch-target {
+    outline: 2px dashed #ffffff;
+    outline-offset: 2px;
+    background: rgba(255, 255, 255, .3);
+}
+
+/* Thư viện khối trong bottom sheet */
+.mobile-palette-groups { display: flex; flex-direction: column; gap: 8px; }
+
+.mobile-palette-cat {
+    border: 1px solid #e4e9f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.mobile-palette-cat-head {
+    width: 100%;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border: none;
+    background: var(--cat-color, #4c97ff);
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.mobile-palette-cat-body {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px;
+    background: #f7f9fc;
+}
+
+.mobile-palette-cat.is-open .mobile-palette-cat-body { display: flex; }
+
+.mobile-palette-block {
+    min-height: 46px;
+    padding: 10px 12px;
+    border: none;
+    border-left: 5px solid var(--cat-color, #4c97ff);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 32, 64, .10);
+    font-size: 13px;
+    font-weight: 700;
+    color: #253044;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mobile-palette-block:active { background: #eef4ff; }
+.mobile-palette-block.is-touch-selected { box-shadow: 0 0 0 3px #ffd60a; }
+
+
+/* ==========================================================================
+ *  10. MÀN HÌNH XEM TRƯỚC / CHẠY THỬ
+ * ========================================================================== */
+.mobile-preview {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding-bottom: var(--mobile-safe-b);
+}
+
+.mobile-preview-header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.mobile-preview-info { flex: 1; min-width: 0; }
+
+.mobile-preview-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 900;
+    color: #2b3445;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-preview-counter {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #8b95a3;
+}
+
+.mobile-preview-run {
+    min-height: 42px;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 22px;
+    background: #4caf50;
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.mobile-preview-run:active { background: #43a047; }
+
+/* Thanh tiến trình */
+.mobile-preview-progress {
+    flex: 0 0 auto;
+    height: 8px;
+    background: #e6ecf7;
+}
+
+.mobile-preview-progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #4c97ff, #855CD6);
+    transition: width .3s ease;
+}
+
+.mobile-preview-body {
+    flex: 1 1 auto;
+    padding: 12px;
+}
+
+/* Thẻ câu hỏi xem trước: dùng chung kiểu của Player trên PC */
+.mobile-preview-body .question-card {
+    padding: 16px 14px 18px;
+    border-radius: var(--mobile-radius);
+}
+
+.mobile-preview-body .q-text { font-size: 19px !important; }
+.mobile-preview-body .option-btn { min-height: 50px; font-size: 15px; }
+
+/* Thẻ chỉ để xem ⇒ làm mờ nhẹng nhưng vẫn đọc được */
+.mobile-preview-body .question-card.is-preview-only { opacity: .96; }
