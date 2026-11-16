@@ -1,0 +1,861 @@
+/* ============================================================================
+ *  css/responsive.css — LỚP GIAO DIỆN ĐIỆN THOẠI & MÁY TÍNH BẢNG (bản 2.7)
+ *  ---------------------------------------------------------------------------
+ *  File này được nạp CUỐI CÙNG trong index.html nên mọi quy tắc ở đây luôn
+ *  được ưu tiên so với các file CSS gốc (base/blocks/editor/player/coding).
+ *
+ *  MỤC TIÊU:
+ *    1. Giữ nguyên 100% trải nghiệm trên máy tính (mọi quy tắc trong media
+ *       query đều chỉ áp dụng khi màn hình đủ hẹp hoặc thiết bị cảm ứng).
+ *    2. Trên điện thoại / máy tính bảng: bố cục 3 cột chuyển thành xếp dọc,
+ *       vùng làm việc vẫn cuộn được, mọi nút bấm đủ lớn để thao tác bằng
+ *       ngón tay (tối thiểu 44px theo khuyến nghị WCAG).
+ *
+ *  CÁC MỐC KÍCH THƯỚC (breakpoint) ĐANG DÙNG:
+ *    · 1280px  : máy tính hẹp        → thu nhỏ cột toolbox & xem trước
+ *    · 1000px  : máy tính bảng        → 3 cột chuyển thành xếp dọc
+ *    ·  768px  : điện thoại ngang / bảng dọc → giao diện gọn
+ *    ·  560px  : điện thoại dọc       → giao diện tối giản
+ *    ·  400px  : điện thoại rất nhỏ   → gọn tối đa
+ *
+ *  NHÓM CẢM ỨNG:
+ *    · (pointer: coarse) → thiết bị chạm ⇒ tăng kích thước nút, bỏ hiệu ứng
+ *      chỉ xuất hiện khi rê chuột, bật gợi ý dành riêng cho cảm ứng.
+ * ========================================================================== */
+
+
+/* ==========================================================================
+ *  1. BIẾN DÙNG CHUNG
+ * --------------------------------------------------------------------------
+ *  --app-vh : chiều cao khung ứng dụng. Dùng 100dvh khi trình duyệt hỗ trợ
+ *             (tránh thanh địa chỉ trên điện thoại làm nội dung bị cắt).
+ *  --tap-min: kích thước chạm tối thiểu cho nút / ô tương tác.
+ * ========================================================================== */
+:root {
+    --app-vh: 100vh;
+    --tap-min: 44px;
+    --gutter: 12px;
+}
+
+/* Trình duyệt hỗ trợ đơn vị dvh (chiều cao khung nhìn động) */
+@supports (height: 100dvh) {
+    :root { --app-vh: 100dvh; }
+}
+
+/* Nền ứng dụng giữ nguyên màu E6F0FF của base.css */
+body, html {
+    height: var(--app-vh);
+    background-color: #E6F0FF;
+    /* Bỏ hiệu ứng "bật nảy" khi vuốt ngang trên iOS */
+    overscroll-behavior-x: none;
+}
+
+#app-container {
+    height: var(--app-vh);
+}
+
+
+/* ==========================================================================
+ *  1b. CHẶN ZOOM MẶC ĐỊNH CỦA TRÌNH DUYỆT DI ĐỘNG (bản 2.7)
+ * --------------------------------------------------------------------------
+ *  `touch-action: none` báo cho trình duyệt biết: vùng này do JAVASCRIPT của
+ *  chúng ta kiểm soát hoàn toàn ⇒ trình duyệt KHÔNG tự phóng to/thu nhỏ
+ *  (browser pinch-zoom) và KHÔNG tự cuộn trang khi người dùng vuốt.
+ *
+ *  Đây là điều kiện tiên quyết để cử chỉ 2 ngón (pan + zoom) của chúng ta
+ *  hoạt động chính xác, không bị xung đột với zoom mặc định của trình duyệt.
+ *
+ *  Ghi chú: chỉ áp dụng cho thiết bị cảm ứng (pointer: coarse) để không ảnh
+ *  hưởng tới cuộn chuột bằng thanh cuộn trên máy tính.
+ * ========================================================================== */
+@media (pointer: coarse) {
+
+    /* Vùng làm việc: không zoom mặc định, không cuộn trang khi vuốt */
+    #workspace-pane,
+    #canvas-content {
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* Chỉ cho phép cuộn dọc bằng ngón tay ở các vùng danh sách */
+    .blocks-list,
+    .category-sidebar,
+    .coding-palette,
+    .coding-workspace,
+    .editor-body,
+    #quiz-player-container,
+    .q-media-inner {
+        touch-action: pan-y;
+    }
+}
+
+
+/* ==========================================================================
+ *  2. MÁY TÍNH HẸP (1001px – 1280px)
+ * --------------------------------------------------------------------------
+ *  Vẫn giữ bố cục 3 cột nhưng thu nhỏ hai cột phụ để cột workspace rộng hơn.
+ * ========================================================================== */
+@media (max-width: 1280px) and (min-width: 1001px) {
+    #toolbox-pane { width: 268px; }
+    #preview-pane { width: 348px; }
+    .block-body { max-width: 280px; }
+}
+
+
+/* ==========================================================================
+ *  3. MÁY TÍNH BẢNG (≤ 1000px) — 3 CỘT CHUYỂN THÀNH XẾP DỌC
+ * --------------------------------------------------------------------------
+ *  Trên bảng, không thể hiển thị 3 cột cùng lúc ⇒ chuyển sang xếp dọc:
+ *    Toolbox (dạng thanh ngang) → Vùng làm việc → Sân khấu & thuộc tính.
+ *  Cả khung chính cuộn dọc, các vùng con có chiều cao cố định riêng.
+ * ========================================================================== */
+@media (max-width: 1000px) {
+
+    #main-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(var(--app-vh) - 50px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* --- Cột 1: TOOLBOX dạng ngang, cuộn ngang --- */
+    #toolbox-pane {
+        width: 100%;
+        flex: 0 0 auto;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .toolbox-content {
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    /* Danh mục bên trái thành hàng ngang nhỏ gọn */
+    .category-sidebar {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+        padding: 8px 10px;
+        border-right: none;
+        border-bottom: 1px solid #eee;
+        overflow-x: auto;
+    }
+
+    .category-item {
+        padding: 7px 12px;
+        font-size: 12.5px;
+        white-space: nowrap;
+        border-left: none;
+        border-radius: 8px;
+    }
+
+    .category-item.active {
+        border-left: none;
+        background: #eaf3ff;
+    }
+
+    /* Danh sách khối mẫu: lưới 2–3 cột, cuộn ngang không bị tràn */
+    .blocks-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px;
+        overflow-y: visible;
+    }
+
+    .block-item {
+        flex: 1 1 220px;
+        min-width: 200px;
+    }
+
+    /* --- Cột 2: VÙNG LÀM VIỆC --- */
+    #workspace-pane {
+        width: 100%;
+        flex: 0 0 auto;
+        height: 62vh;
+        min-height: 320px;
+        margin-top: 14px;
+        padding: 12px;
+        /* Vuốt dọc trong vùng làm việc do trình duyệt xử lý (mượt hơn JS) */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* --- Cột 3: SÂN KHẤU & THUỘC TÍNH --- */
+    #preview-pane {
+        width: 100%;
+        flex: 0 0 auto;
+        margin: 0 10px 12px;
+    }
+
+    #stage-area {
+        margin-top: 0;
+        height: 52vh;
+        min-height: 260px;
+    }
+
+    #properties-area { min-height: 120px; }
+}
+
+
+/* ==========================================================================
+ *  4. ĐIỆN THOẠI NGANG / MÁY TÍNH BẢNG DỌC (≤ 768px)
+ * --------------------------------------------------------------------------
+ *  Mục tiêu: mọi thứ vừa trong khung nhìn ngang 360–430px.
+ *    · Thanh trên cùng gọn lại, nút to hơn.
+ *    · Vùng làm việc cao hơn (chiếm phần lớn màn hình).
+ *    · Khối trong workspace rút gọn, chữ nhỏ lại vừa đọc.
+ * ========================================================================== */
+@media (max-width: 768px) {
+
+    /* --- Thanh điều hướng --- */
+    #top-bar {
+        height: auto;
+        min-height: 52px;
+        padding: 6px 8px;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .top-bar-left {
+        gap: 8px;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .scratch-logo { font-size: 15px; }
+
+    .menu-btn {
+        font-size: 13px;
+        padding: 8px 10px;
+        min-height: 38px;
+    }
+
+    /* Ô tên dự án co gọn, vẫn nhìn thấy được */
+    .project-title {
+        flex: 1 1 100px;
+        min-width: 90px;
+        width: auto;
+        font-size: 13px;
+        padding: 8px 10px;
+        min-height: 38px;
+    }
+
+    .top-bar-right { gap: 6px; }
+
+    #start-btn, #stop-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 17px;
+    }
+
+    /* Menu thả xuống rộng hết màn hình, không tràn ra ngoài */
+    .menu-dropdown {
+        min-width: min(260px, calc(100vw - 24px));
+        max-width: calc(100vw - 24px);
+    }
+
+    .menu-item { padding: 12px 12px; font-size: 13.5px; }
+
+    /* --- Vùng làm việc --- */
+    #workspace-pane {
+        height: 56vh;
+        min-height: 280px;
+        margin-top: 10px;
+    }
+
+    /* Gợi ý thao tác: trên điện thoại thay bằng hướng dẫn cảm ứng */
+    #workspace-hint {
+        font-size: 11px;
+        padding: 6px 10px;
+        margin-bottom: 8px;
+    }
+
+    /* Gợi ý riêng cho cảm ứng: chỉ hiện trên thiết bị chạm */
+    .hint-touch { display: none; }
+
+    /* Khối trong workspace: bỏ "giữ nguyên 1 dòng" để chữ không tràn */
+    .dropped-block {
+        white-space: normal;
+        max-width: min(78vw, 320px);
+        padding: 9px 12px;
+        font-size: 12px;
+    }
+
+    .block-body { max-width: 100%; font-size: 12px; }
+
+    /* Nút ⚙️ luôn hiện (không có chuột để rê chuột vào) */
+    .dropped-block .block-edit-btn {
+        opacity: 1;
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+
+    .block-edit-btn:hover { transform: none; }
+
+    /* --- Sân khấu xem trước & thuộc tính --- */
+    #stage-area { height: 44vh; min-height: 220px; padding: 10px; }
+    #properties-area { padding: 12px; }
+}
+
+
+/* ==========================================================================
+ *  5. ĐIỆN THOẠI DỌC (≤ 560px)
+ * --------------------------------------------------------------------------
+ *  Bỏ hẳn những chi tiết trang trí, ưu tiên nội dung và nút bấm lớn.
+ * ========================================================================== */
+@media (max-width: 560px) {
+
+    :root { --gutter: 8px; }
+
+    /* Thanh trên cùng: logo + menu gọn, nút chơi ở góc phải */
+    .scratch-logo { font-size: 14px; letter-spacing: .5px; }
+    .menu-btn { padding: 7px 8px; font-size: 12.5px; min-height: 36px; }
+
+    /* Tên dự án xuống hàng riêng cho đủ bề ngang */
+    .project-title {
+        flex: 1 1 100%;
+        order: 3;
+        width: 100%;
+    }
+
+    #start-btn, #stop-btn { width: 38px; height: 38px; }
+
+    /* Toolbox: khối mẫu xếp 1 cột cho dễ bấm */
+    .blocks-list { flex-direction: column; }
+    .block-item { flex: 1 1 auto; min-width: 0; padding: 12px; font-size: 13px; }
+
+    .category-item { padding: 8px 10px; font-size: 12px; }
+
+    /* Vùng làm việc chiếm nhiều diện tích hơn */
+    #workspace-pane {
+        height: 52vh;
+        min-height: 240px;
+        padding: 8px;
+        margin-top: 8px;
+    }
+
+    #stage-area { height: 40vh; min-height: 200px; }
+
+    /* Thẻ câu hỏi trong Player: bỏ đệm lớn, chữ vừa màn hình */
+    .question-card {
+        padding: 16px 14px 18px;
+        border-radius: 14px;
+    }
+
+    .q-text { font-size: 19px !important; }
+
+    .option-btn {
+        min-height: 52px;
+        padding: 12px 14px;
+        font-size: 15px;
+    }
+
+    .option-btn.opt-pill { font-size: 15.5px; }
+
+    .sort-item { min-height: 50px; padding: 10px 12px; font-size: 14px; }
+
+    .submit-btn {
+        width: 100%;
+        align-self: stretch;
+        text-align: center;
+        padding: 14px 20px;
+        font-size: 15px;
+    }
+
+    /* Thanh thời gian: cao hơn một chút cho dễ nhìn */
+    .q-timebar { height: 18px; margin: 10px 0 16px; }
+
+    /* Bảng kết quả */
+    .result-card { padding: 24px 16px; }
+    .result-title { font-size: 21px; }
+    .result-score { font-size: 36px; }
+
+    /* Bảng ghi chú nổi: bám sát mép dưới, rộng gần hết màn hình */
+    .quiz-note-float {
+        right: 8px;
+        left: 8px;
+        bottom: 8px;
+        width: auto;
+    }
+
+    .nf-body { max-height: 34vh; }
+
+    /* Bảng kết quả: cột thời gian xuống dòng mới */
+    .result-row { flex-wrap: wrap; }
+    .result-row .r-time { flex: 0 0 auto; }
+}
+
+
+/* ==========================================================================
+ *  6. ĐIỆN THOẠI RẤT NHỎ (≤ 400px)
+ * ========================================================================== */
+@media (max-width: 400px) {
+    .scratch-logo { font-size: 13px; }
+    .menu-btn { padding: 6px 7px; font-size: 12px; }
+    .question-card { padding: 14px 11px 16px; }
+    .q-text { font-size: 17px !important; }
+    .option-btn { font-size: 14px; padding: 11px 12px; }
+    .result-score { font-size: 32px; }
+}
+
+
+/* ==========================================================================
+ *  7. THIẾT BỊ CẢM ỨNG (pointer: coarse) — ÁP DỤNG CHO MỌI KÍCH THƯỚC
+ * --------------------------------------------------------------------------
+ *  Không phụ thuộc bề rộng: mọi thiết bị chạm (điện thoại, bảng) đều dùng
+ *  chung các quy tắc này để thao tác bằng ngón tay dễ chịu.
+ * ========================================================================== */
+@media (pointer: coarse) {
+
+    /* Nút bấm & ô tương tác đạt kích thước chạm tối thiểu 44px */
+    .menu-btn,
+    .tab-btn,
+    .btn,
+    .block-edit-btn,
+    .icon-btn,
+    .media-btn,
+    .nf-toggle {
+        min-height: var(--tap-min);
+    }
+
+    .block-edit-btn { width: 32px; height: 32px; }
+
+    .icon-btn { padding: 8px 10px; }
+
+    /* Ẩn hiệu ứng chỉ xuất hiện khi rê chuột (trên cảm ứng không có rê) */
+    .option-btn:hover:not(:disabled) { transform: none; }
+    .match-item:hover { transform: none; }
+    .cb-palette:hover { transform: none; }
+    .question-item:hover { transform: none; }
+
+    /* Khối mẫu trong toolbox: bỏ "nắm" chuột, dùng biểu tượng cảm ứng */
+    .block-item { cursor: pointer; touch-action: manipulation; }
+
+    /* Vùng kéo được: cấm cuộn trang khi vuốt trên chính vùng kéo */
+    .dropped-block,
+    .sort-item,
+    .match-button,
+    .q-media-frame,
+    .hotspot-stage-v23 {
+        touch-action: none;
+    }
+
+    /* Không hiện con trỏ "nắm" trên thiết bị cảm ứng */
+    .cb { cursor: pointer; }
+    .sort-item { cursor: pointer; }
+
+    /* Nút tròn nối ô: to hơn để bấm bằng ngón tay */
+    .match-button { width: 34px; height: 34px; }
+
+    /* Gợi ý riêng cho cảm ứng: hiện thay cho phần hướng dẫn dùng chuột */
+    .hint-touch { display: inline; }
+}
+
+
+/* ==========================================================================
+ *  8. MODAL CẤU HÌNH TOÀN MÀN HÌNH TRÊN ĐIỆN THOẠI (≤ 560px)
+ * --------------------------------------------------------------------------
+ *  Modal cao gần hết màn hình, chân modal dính đáy để nút "Lưu cấu hình"
+ *  luôn nằm trong tầm tay.
+ * ========================================================================== */
+@media (max-width: 560px) {
+
+    .editor-overlay {
+        align-items: stretch;
+        padding: 0;
+    }
+
+    .editor-modal {
+        width: 100%;
+        max-width: 100%;
+        max-height: var(--app-vh);
+        height: var(--app-vh);
+        border-radius: 0;
+    }
+
+    /* Khi mở tab "Lập trình khối" modal rộng hết màn hình */
+    .editor-modal.coding-mode {
+        width: 100%;
+        height: var(--app-vh);
+        max-height: var(--app-vh);
+    }
+
+    .editor-header { padding: 12px 14px; }
+
+    .editor-tabs { padding: 8px 10px 0; }
+
+    .editor-tab {
+        flex: 1;
+        justify-content: center;
+        padding: 10px 8px;
+        font-size: 12.5px;
+    }
+
+    .editor-body { padding: 14px 12px; }
+
+    .editor-footer {
+        padding: 10px 12px;
+        /* Chân modal dính đáy + bóng để nội dung cuộn không bị che */
+        position: sticky;
+        bottom: 0;
+        box-shadow: 0 -4px 14px rgba(15, 32, 64, .08);
+    }
+
+    .editor-footer .btn { flex: 1; padding: 12px 10px; }
+
+    /* Form: mỗi nhóm chiếm một hàng, không bị bóp dưới */
+    .form-row { flex-direction: column; gap: 10px; }
+    .form-row > .form-group { min-width: 0; width: 100%; }
+
+    /* Cỡ chữ 16px ⇒ iOS không tự phóng to khi bấm vào ô nhập */
+    .form-input, .form-textarea, .form-select { font-size: 16px; }
+
+    /* Hàng cấu hình: xuống dòng cho dễ bấm */
+    .row-item { flex-wrap: wrap; }
+    .row-item input[type="text"] { flex: 1 1 100%; }
+
+    /* Bảng chọn ảnh: nút to hơn */
+    .image-actions .btn, .image-fit .form-input { min-height: 40px; }
+}
+
+
+/* ==========================================================================
+ *  9. MODAL CẤU HÌNH TRÊN MÁY TÍNH BẢNG (561px – 1000px)
+ * ========================================================================== */
+@media (max-width: 1000px) and (min-width: 561px) {
+    .editor-modal { width: min(94vw, 720px); max-height: 90vh; }
+    .editor-modal.coding-mode { width: min(97vw, 1180px); height: 88vh; }
+    .editor-body { padding: 16px; }
+}
+
+
+/* ==========================================================================
+ *  10. VÙNG LẬP TRÌNH KHỐI (bảng lập trình Scratch-like) TRÊN MÀN HÌNH NHỎ
+ * --------------------------------------------------------------------------
+ *  Danh mục khối nằm trên, 3 chương trình nằm dưới; khối lệnh xếp dọc.
+ * ========================================================================== */
+@media (max-width: 900px) {
+    .coding-panel { min-height: 0; }
+
+    .coding-toolbar {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .coding-vars {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .coding-vars .form-input { max-width: none; flex: 1; }
+
+    .coding-actions { flex: 1 1 100%; }
+    .coding-actions .btn { flex: 1; padding: 10px 12px; }
+
+    .coding-hint { padding: 7px 10px; font-size: 11.5px; }
+
+    .coding-palette {
+        max-height: 168px;
+        padding: 8px;
+    }
+
+    .coding-cat { margin-bottom: 9px; }
+    .coding-cat-blocks { gap: 6px; }
+    .cb-palette { width: auto; max-width: 100%; }
+
+    .coding-workspace { padding: 10px; }
+
+    .coding-stack { padding: 8px; margin-bottom: 12px; }
+    .coding-stack-head { min-width: 0; font-size: 12px; padding: 7px 10px; }
+
+    .coding-output { max-height: 160px; padding: 9px 11px; }
+
+    /* Ô nhập bên trong khối không bị tràn khỏi khối */
+    .cb-input { max-width: 110px; }
+    .cb-text-input { width: 96px; }
+    .cb-select { max-width: 104px; }
+}
+
+
+/* ==========================================================================
+ *  13. CHẾ ĐỘ XOAY NGANG TRÊN ĐIỆN THOẠI (Landscape)
+ * --------------------------------------------------------------------------
+ *  Khi điện thoại xoay ngang, chiều cao màn hình rất ngắn (≈ 360–430px) nhưng
+ *  chiều ngang lại rộng. Bố cục xếp dọc của chế độ dọc sẽ không vừa, nên:
+ *    · 3 cột được khôi phục lại (toolbox · workspace · xem trước) vì đủ bề ngang.
+ *    · Chiều cao mọi vùng được tính theo chiều cao khung nhìn (100dvh) để
+ *      không bị tràn ra ngoài màn hình.
+ *    · Vùng làm việc chiếm phần lớn không gian còn lại.
+ *
+ *  Điều kiện: chiều ngang LỚN HƠN chiều cao (landscape) VÀ màn hình hẹp.
+ * ========================================================================== */
+@media (orientation: landscape) and (max-width: 1000px) {
+
+    #main-layout {
+        flex-direction: row;          /* Trở lại bố cục 3 cột */
+        height: calc(var(--app-vh) - 52px);
+        min-height: 0;
+        overflow: hidden;              /* Không cuộn cả khung, chỉ cuộn từng cột */
+    }
+
+    /* --- Toolbox: thanh ngang mỏng ở trên cùng --- */
+    #toolbox-pane {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 46px;
+        min-height: 46px;
+        z-index: 6;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+        background: #ffffff;
+    }
+
+    /* Danh sách khối nằm cuộn ngang ngay dưới thanh tab */
+    #toolbox-pane .toolbox-content {
+        position: absolute;
+        top: 46px;
+        left: 0;
+        right: 0;
+        bottom: auto;
+        height: auto;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height .22s ease;
+    }
+
+    /* Khi bấm nút mũi tên ⇒ mở rộng danh sách khối xuống dưới */
+    #toolbox-pane.is-expanded-mobile .toolbox-content {
+        max-height: 46vh;
+        overflow-y: auto;
+    }
+
+    #toolbox-pane .category-sidebar { display: none; }
+
+    #toolbox-pane .blocks-list {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        padding: 8px 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    #toolbox-pane .block-item {
+        flex: 0 0 auto;
+        min-width: 148px;
+        white-space: nowrap;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    /* Thanh tab + nút thu gọn nằm gọn trong 46px đầu tiên */
+    #toolbox-pane .tabs-header {
+        height: 46px;
+        border-bottom: none;
+    }
+
+    #toolbox-pane .tab-btn {
+        flex: 0 0 auto;
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+
+    /* --- Workspace: chiếm toàn bộ phần còn lại --- */
+    #workspace-pane {
+        position: absolute;
+        top: 46px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 8px;
+        border-radius: 0;
+    }
+
+    /* --- Xem trước: ẩn đi trong chế độ xoay ngang (không đủ chỗ) --- */
+    #preview-pane {
+        display: none;
+    }
+
+    /* --- Player: dùng hết màn hình ngang --- */
+    #player-view { padding: 0; }
+
+    .player-header {
+        padding: 8px 12px;
+        flex: 0 0 auto;
+    }
+
+    .player-header h2 { font-size: 14px; }
+
+    #quiz-player-container { padding: 12px 12px 40px; }
+
+    .question-card { padding: 14px 16px 16px; }
+
+    .q-text { font-size: 20px !important; }
+
+    .q-timebar { height: 14px; margin: 8px 0 12px; }
+
+    .option-btn { min-height: 44px; padding: 9px 14px; font-size: 14px; }
+
+    .sort-item { min-height: 44px; padding: 8px 12px; font-size: 13px; }
+
+    .submit-btn { padding: 10px 20px; }
+
+    /* Bảng ghi chú nổi: nhỏ lại cho vừa khung ngang */
+    .quiz-note-float { width: min(300px, 46vw); right: 10px; bottom: 10px; }
+    .nf-body { max-height: 26vh; }
+
+    /* Modal cấu hình: chiếm gần hết màn hình ngang */
+    .editor-modal {
+        width: min(96vw, 900px);
+        max-height: 94vh;
+    }
+
+    .editor-modal.coding-mode { width: min(97vw, 1180px); height: 92vh; }
+
+    .editor-body { padding: 12px 14px; }
+
+    /* Vùng lập trình khối: danh mục bên trái + chương trình bên phải (vừa ngang) */
+    .coding-main { flex-direction: row; }
+    .coding-palette { width: 220px; max-height: none; border-bottom: none; border-right: 1px solid #dde4ee; }
+    .coding-cat-blocks { flex-direction: column; }
+}
+
+
+/* ==========================================================================
+ *  14. MÁY TÍNH BẢNG XOAY NGANG (landscape, rộng > 1000px)
+ * --------------------------------------------------------------------------
+ *  Bảng xoay ngang có đủ bề ngang cho 3 cột, nhưng chiều cao bị hạn chế ⇒
+ *  thu nhỏ khoảng trống dọc để mọi thứ vẫn nằm gọn trong một màn hình.
+ * ========================================================================== */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 1001px) {
+    #top-bar { height: 46px; }
+    #main-layout { height: calc(var(--app-vh) - 46px); }
+    #toolbox-pane { width: 250px; }
+    #preview-pane { width: 300px; }
+    #stage-area { height: 58%; margin-top: 12px; }
+    #workspace-pane { margin-top: 12px; padding: 12px; }
+}
+
+
+/* ==========================================================================
+ *  11. CÁC LOẠI CÂU HỎI TRONG PLAYER TRÊN MÀN HÌNH NHỎ (≤ 560px)
+ * --------------------------------------------------------------------------
+ *  · Nối ô (Matching): 2 cột chật trên điện thoại ⇒ chuyển sang 1 CỘT dọc.
+ *    Nhờ vậy nội dung không bị bóp và dễ bấm bằng ngón tay.
+ *  · Điền từ / Chọn từ: giảm đệm, chữ vừa màn hình.
+ *  · Chọn vùng ảnh: khung ảnh cao hơn một chút để bấm vùng dễ hơn.
+ * ========================================================================== */
+@media (max-width: 560px) {
+
+    /* --- Nối ô: xếp dọc 1 cột --- */
+    .match-2n-area {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 18px;
+        padding: 10px 0;
+    }
+
+    .match-2n-area .match-box {
+        min-height: 48px;
+        padding: 9px 10px;
+        gap: 8px;
+    }
+
+    .match-2n-area .match-box .match-text { font-size: 13.5px; }
+
+    /* Đường nối vẫn vẽ bằng SVG nên không cần chỉnh khi xếp dọc */
+
+    /* --- Điền từ & chọn từ --- */
+    .cloze-text, .dropdown-text {
+        padding: 12px 13px;
+        line-height: 2.1;
+        font-size: 14px;
+    }
+
+    .cloze-blank { min-width: 100px; font-size: 13.5px; }
+    .inline-select { font-size: 13.5px; }
+
+    /* --- Chọn vùng trên ảnh --- */
+    .hotspot-stage { border-radius: 10px; }
+    .region-label { font-size: 10px; padding: 1px 5px; }
+
+    /* --- Bảng kết quả: nút xếp cạnh nhau --- */
+    .result-actions { flex-direction: column; }
+    .result-actions .btn { width: 100%; }
+}
+
+
+/* ==========================================================================
+ *  12. PHỤ KIỆN CHO THAO TÁC CẢM ỨNG (không phụ thuộc kích thước màn hình)
+ * --------------------------------------------------------------------------
+ *  12.1 Bóng ma khối đang kéo (dùng cho cảm ứng):
+ *       Một bản sao của khối mẫu bám theo ngón tay, giúp người dùng biết
+ *       đang kéo loại câu hỏi nào.
+ *  12.2 Lớp đánh dấu "đang kéo bằng cảm ứng" trên khối trong workspace.
+ * ========================================================================== */
+
+/* Bóng ma theo ngón tay khi kéo khối mẫu từ toolbox */
+.touch-drag-ghost {
+    position: fixed;
+    z-index: 9000;
+    pointer-events: none;
+    opacity: .9;
+    transform: translate(-50%, -50%) rotate(-2deg);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .32);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 14px;
+    color: #fff;
+    background: #4c97ff;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Khối trong workspace đang được kéo bằng cảm ứng */
+.dropped-block.is-touch-dragging {
+    opacity: .9;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, .32);
+    z-index: 1000;
+    touch-action: none;
+}
+
+/* Vùng làm việc đang nhận thả ⇒ viền nhấp nháy nhẹ (áp dụng cho cảm ứng) */
+#workspace-pane.is-touch-drop-target {
+    outline: 2px dashed #4c97ff;
+    outline-offset: -6px;
+}
+
+/* Khối lệnh trong vùng lập trình đang được chọn để chạm-đặt (cảm ứng) */
+.cb.is-touch-selected {
+    box-shadow: 0 0 0 3px #ffd60a, 0 2px 5px rgba(15, 32, 64, .22);
+}
+
+/* Khe / ổ nhập đang chờ nhận khối (chế độ chạm-đặt) */
+.cb-gap.is-touch-target {
+    height: 34px;
+    background: rgba(76, 151, 255, .16);
+    box-shadow: inset 0 0 0 2px #4c97ff;
+}
+
+.cb-slot.is-touch-target {
+    outline: 2px dashed #ffffff;
+    outline-offset: 2px;
+    background: rgba(255, 255, 255, .30);
+}
+
+/* Danh mục khối sáng đỏ = vùng xoá (đang chờ thả) */
+.coding-palette.is-touch-trash {
+    background: #ffecec;
+    box-shadow: inset 0 0 0 3px #ef4444;
+}
